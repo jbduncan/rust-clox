@@ -1,4 +1,6 @@
 use crate::value::Value;
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 pub enum OpCode {
     OpConstant,
@@ -20,8 +22,8 @@ impl Chunk {
         }
     }
 
-    pub fn write_op_code(&mut self, byte: OpCode, line: u32) {
-        self.write_byte(byte as u8, line);
+    pub fn write_op_code(&mut self, op_code: OpCode, line: u32) {
+        self.write_byte(op_code as u8, line);
     }
 
     pub fn write_byte(&mut self, byte: u8, line: u32) {
@@ -37,41 +39,51 @@ impl Chunk {
     pub fn disassemble(&self, name: &str) {
         println!("== {} ==", name);
 
+        print!("{}", self);
+    }
+
+    fn fmt_instruction(&self, f: &mut Formatter<'_>, offset: usize) -> Result<usize, fmt::Error> {
+        write!(f, "{:04} ", offset)?;
+        if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
+            write!(f, "   | ")?;
+        } else {
+            write!(f, "{:4} ", self.lines[offset])?;
+        }
+
+        match self.code[offset] {
+            instruction if instruction == OpCode::OpConstant as u8 => {
+                self.fmt_constant_instruction(f, "OP_CONSTANT", offset)
+            }
+            instruction if instruction == OpCode::OpReturn as u8 => {
+                self.fmt_simple_instruction(f, "OP_RETURN", offset)
+            }
+            _ => {
+                write!(f, "Unknown opcode {}", self.code[offset])?;
+                Ok(offset + 1)
+            }
+        }
+    }
+
+    fn fmt_constant_instruction(&self, f: &mut Formatter<'_>, name: &str, offset: usize) -> Result<usize, fmt::Error> {
+        let constant = self.code[offset + 1];
+        write!(f, "{: <16} {:4} '", name, constant)?;
+        write!(f, "{}", self.constants[constant as usize])?;
+        writeln!(f, "'")?;
+        Ok(offset + 2)
+    }
+
+    fn fmt_simple_instruction(&self, f: &mut Formatter<'_>, name: &str, offset: usize) -> Result<usize, fmt::Error> {
+        writeln!(f, "{}", name)?;
+        Ok(offset + 1)
+    }
+}
+
+impl Display for Chunk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut offset = 0;
         while offset < self.code.len() {
-            offset = self.disassemble_instruction(offset);
+            offset = self.fmt_instruction(f, offset)?;
         }
+        Ok(())
     }
-
-    fn disassemble_instruction(&self, offset: usize) -> usize {
-        print!("{:04} ", offset);
-        if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
-            print!("   | ");
-        } else {
-            print!("{:4} ", self.lines[offset]);
-        }
-
-        let instruction = self.code[offset];
-        if instruction == OpCode::OpConstant as u8 {
-            constant_instruction("OP_CONSTANT", self, offset)
-        } else if instruction == OpCode::OpReturn as u8 {
-            simple_instruction("OP_RETURN", offset)
-        } else {
-            println!("Unknown opcode {}", instruction);
-            offset + 1
-        }
-    }
-}
-
-fn constant_instruction(name: &str, chunk: &Chunk, offset: usize) -> usize {
-    let constant = chunk.code[offset + 1];
-    print!("{: <16} {:4} '", name, constant);
-    chunk.constants[constant as usize].print();
-    println!("'");
-    offset + 2
-}
-
-fn simple_instruction(name: &str, offset: usize) -> usize {
-    println!("{}", name);
-    offset + 1
 }
