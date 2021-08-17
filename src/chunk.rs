@@ -64,7 +64,12 @@ impl Chunk {
         }
     }
 
-    fn fmt_constant_instruction(&self, f: &mut Formatter<'_>, name: &str, offset: usize) -> Result<usize, fmt::Error> {
+    fn fmt_constant_instruction(
+        &self,
+        f: &mut Formatter<'_>,
+        name: &str,
+        offset: usize,
+    ) -> Result<usize, fmt::Error> {
         let constant = self.code[offset + 1];
         write!(f, "{: <16} {:4} '", name, constant)?;
         write!(f, "{}", self.constants[constant as usize])?;
@@ -72,7 +77,12 @@ impl Chunk {
         Ok(offset + 2)
     }
 
-    fn fmt_simple_instruction(&self, f: &mut Formatter<'_>, name: &str, offset: usize) -> Result<usize, fmt::Error> {
+    fn fmt_simple_instruction(
+        &self,
+        f: &mut Formatter<'_>,
+        name: &str,
+        offset: usize,
+    ) -> Result<usize, fmt::Error> {
         writeln!(f, "{}", name)?;
         Ok(offset + 1)
     }
