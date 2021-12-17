@@ -1,10 +1,31 @@
-use crate::value::Value;
+use std::borrow::Borrow;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use crate::value::Value;
 
 pub enum OpCode {
-    OpConstant,
-    OpReturn,
+    OpConstant = 0,
+    OpAdd = 1,
+    OpSubtract = 2,
+    OpMultiply = 3,
+    OpDivide = 4,
+    OpNegate = 5,
+    OpReturn = 6,
+}
+
+impl OpCode {
+    pub fn from_u8(value: u8) -> Option<OpCode> {
+        match value {
+            0 => Some(OpCode::OpConstant),
+            1 => Some(OpCode::OpNegate),
+            2 => Some(OpCode::OpReturn),
+            _ => None
+        }
+    }
+
+    pub fn to_u8(self) -> u8 {
+        return self as u8
+    }
 }
 
 pub struct Chunk {
@@ -22,8 +43,16 @@ impl Chunk {
         }
     }
 
+    pub fn code(&self) -> &Vec<u8> {
+        self.code.borrow()
+    }
+
+    pub fn constants(&self) -> &Vec<Value> {
+        self.constants.borrow()
+    }
+
     pub fn write_op_code(&mut self, op_code: OpCode, line: u32) {
-        self.write_byte(op_code as u8, line);
+        self.write_byte(op_code.to_u8(), line);
     }
 
     pub fn write_byte(&mut self, byte: u8, line: u32) {
@@ -42,7 +71,13 @@ impl Chunk {
         print!("{}", self);
     }
 
-    fn fmt_instruction(&self, f: &mut Formatter<'_>, offset: usize) -> Result<usize, fmt::Error> {
+    pub fn disassemble_instruction(&self, offset: u8) {
+        let mut buffer = String::new();
+        let _ = self.fmt_instruction(&mut buffer, offset as usize);
+        println!("{}", buffer);
+    }
+
+    fn fmt_instruction(&self, f: &mut dyn fmt::Write, offset: usize) -> Result<usize, fmt::Error> {
         write!(f, "{:04} ", offset)?;
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
             write!(f, "   | ")?;
@@ -50,11 +85,26 @@ impl Chunk {
             write!(f, "{:4} ", self.lines[offset])?;
         }
 
-        match self.code[offset] {
-            instruction if instruction == OpCode::OpConstant as u8 => {
+        match OpCode::from_u8(self.code[offset]) {
+            Some(OpCode::OpConstant) => {
                 self.fmt_constant_instruction(f, "OP_CONSTANT", offset)
             }
-            instruction if instruction == OpCode::OpReturn as u8 => {
+            Some(OpCode::OpNegate) => {
+                self.fmt_simple_instruction(f, "OP_NEGATE", offset)
+            }
+            Some(OpCode::OpAdd) => {
+                self.fmt_simple_instruction(f, "OP_ADD", offset)
+            }
+            Some(OpCode::OpSubtract) => {
+                self.fmt_simple_instruction(f, "OP_SUBTRACT", offset)
+            }
+            Some(OpCode::OpMultiply) => {
+                self.fmt_simple_instruction(f, "OP_MULTIPLY", offset)
+            }
+            Some(OpCode::OpDivide) => {
+                self.fmt_simple_instruction(f, "OP_DIVIDE", offset)
+            }
+            Some(OpCode::OpReturn) => {
                 self.fmt_simple_instruction(f, "OP_RETURN", offset)
             }
             _ => {
@@ -66,7 +116,7 @@ impl Chunk {
 
     fn fmt_constant_instruction(
         &self,
-        f: &mut Formatter<'_>,
+        f: &mut dyn fmt::Write,
         name: &str,
         offset: usize,
     ) -> Result<usize, fmt::Error> {
@@ -79,7 +129,7 @@ impl Chunk {
 
     fn fmt_simple_instruction(
         &self,
-        f: &mut Formatter<'_>,
+        f: &mut dyn fmt::Write,
         name: &str,
         offset: usize,
     ) -> Result<usize, fmt::Error> {
