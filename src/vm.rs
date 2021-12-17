@@ -7,7 +7,7 @@ pub struct VM {
     chunk: Chunk,
     ip: u8,
     stack: Vec<Value>,
-    stack_top: usize
+    stack_top: usize,
 }
 
 impl VM {
@@ -19,7 +19,7 @@ impl VM {
             chunk,
             ip,
             stack,
-            stack_top
+            stack_top,
         }
     }
 
@@ -35,40 +35,40 @@ impl VM {
             let instruction = self.read_byte();
             let op_code = OpCode::from_u8(instruction);
             match op_code {
-                OpCode::OpConstant => {
+                Some(OpCode::OpConstant) => {
                     let constant = self.read_constant().to_owned();
                     self.push(constant);
                 }
-                OpCode::OpAdd => {
+                Some(OpCode::OpAdd) => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(a + b);
                 }
-                OpCode::OpSubtract => {
+                Some(OpCode::OpSubtract) => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(a - b);
                 }
-                OpCode::OpMultiply => {
+                Some(OpCode::OpMultiply) => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(a * b);
                 }
-                OpCode::OpDivide => {
+                Some(OpCode::OpDivide) => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(a / b);
                 }
-                OpCode::OpNegate => {
+                Some(OpCode::OpNegate) => {
                     let value = -self.pop();
                     self.push(value);
                 }
-                OpCode::OpReturn => {
+                Some(OpCode::OpReturn) => {
                     println!("{}", self.pop());
                     return InterpretResult::InterpretOk;
                 }
-                _ => {
-                    panic!(f, "Unknown opcode {}", self.code[offset])?;
+                None => {
+                    panic!("Unknown opcode {}", instruction);
                 }
             }
         }
@@ -103,7 +103,8 @@ impl VM {
             print!(" ]");
         }
         println!();
-        self.chunk.disassemble_instruction(self.ip - self.chunk.code()[0]);
+        self.chunk
+            .disassemble_instruction(self.ip - self.chunk.code()[0]);
     }
 }
 

@@ -1,17 +1,29 @@
+use rust_clox::chunk::Chunk;
+use rust_clox::chunk::OpCode::{OpAdd, OpConstant, OpDivide, OpMultiply, OpNegate, OpReturn};
+use rust_clox::value::Value;
+use rust_clox::vm::VM;
 use std::env;
 use std::io::{self, BufRead};
 use std::process::exit;
-use rust_clox::chunk::{Chunk, OpCode::{OpConstant, OpReturn}};
-use rust_clox::chunk::OpCode::OpNegate;
-use rust_clox::value::Value;
-use rust_clox::vm::VM;
 
 fn main() {
     let mut chunk = Chunk::new();
 
     let constant = chunk.add_constant(Value(1.2));
     chunk.write_op_code(OpConstant, 123);
-    chunk.write_byte(constant as u8, 123);
+    chunk.write_byte(constant, 123);
+
+    let constant = chunk.add_constant(Value(3.4));
+    chunk.write_op_code(OpConstant, 123);
+    chunk.write_byte(constant, 123);
+
+    chunk.write_op_code(OpAdd, 123);
+
+    let constant = chunk.add_constant(Value(5.6));
+    chunk.write_op_code(OpConstant, 123);
+    chunk.write_byte(constant, 123);
+
+    chunk.write_op_code(OpDivide, 123);
     chunk.write_op_code(OpNegate, 123);
 
     chunk.write_op_code(OpReturn, 123);
@@ -20,7 +32,7 @@ fn main() {
     VM::new(chunk).interpret();
 }
 
-// TODO: Replace main() when reaching Chapter 15
+// TODO: Replace main() when reaching Chapter 16
 // fn main2() {
 //     exit(run_app());
 // }
