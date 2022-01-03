@@ -35,35 +35,35 @@ impl VM {
             let instruction = self.read_byte();
             let op_code = OpCode::from_u8(instruction);
             match op_code {
-                Some(OpCode::OpConstant) => {
+                Some(OpCode::Constant) => {
                     let constant = self.read_constant().to_owned();
                     self.push(constant);
                 }
-                Some(OpCode::OpAdd) => {
+                Some(OpCode::Add) => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(a + b);
                 }
-                Some(OpCode::OpSubtract) => {
+                Some(OpCode::Subtract) => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(a - b);
                 }
-                Some(OpCode::OpMultiply) => {
+                Some(OpCode::Multiply) => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(a * b);
                 }
-                Some(OpCode::OpDivide) => {
+                Some(OpCode::Divide) => {
                     let b = self.pop();
                     let a = self.pop();
                     self.push(a / b);
                 }
-                Some(OpCode::OpNegate) => {
+                Some(OpCode::Negate) => {
                     let value = -self.pop();
                     self.push(value);
                 }
-                Some(OpCode::OpReturn) => {
+                Some(OpCode::Return) => {
                     println!("{}", self.pop());
                     return InterpretResult::InterpretOk;
                 }

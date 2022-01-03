@@ -1,5 +1,5 @@
 use rust_clox::chunk::Chunk;
-use rust_clox::chunk::OpCode::{OpAdd, OpConstant, OpDivide, OpMultiply, OpNegate, OpReturn};
+use rust_clox::chunk::OpCode;
 use rust_clox::value::Value;
 use rust_clox::vm::VM;
 use std::env;
@@ -10,23 +10,23 @@ fn main() {
     let mut chunk = Chunk::new();
 
     let constant = chunk.add_constant(Value(1.2));
-    chunk.write_op_code(OpConstant, 123);
+    chunk.write_op_code(OpCode::Constant, 123);
     chunk.write_byte(constant, 123);
 
     let constant = chunk.add_constant(Value(3.4));
-    chunk.write_op_code(OpConstant, 123);
+    chunk.write_op_code(OpCode::Constant, 123);
     chunk.write_byte(constant, 123);
 
-    chunk.write_op_code(OpAdd, 123);
+    chunk.write_op_code(OpCode::Add, 123);
 
     let constant = chunk.add_constant(Value(5.6));
-    chunk.write_op_code(OpConstant, 123);
+    chunk.write_op_code(OpCode::Constant, 123);
     chunk.write_byte(constant, 123);
 
-    chunk.write_op_code(OpDivide, 123);
-    chunk.write_op_code(OpNegate, 123);
+    chunk.write_op_code(OpCode::Divide, 123);
+    chunk.write_op_code(OpCode::Negate, 123);
 
-    chunk.write_op_code(OpReturn, 123);
+    chunk.write_op_code(OpCode::Return, 123);
 
     chunk.disassemble("test chunk");
     VM::new(chunk).interpret();

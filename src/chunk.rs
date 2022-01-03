@@ -4,25 +4,25 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 
 pub enum OpCode {
-    OpConstant = 0,
-    OpAdd = 1,
-    OpSubtract = 2,
-    OpMultiply = 3,
-    OpDivide = 4,
-    OpNegate = 5,
-    OpReturn = 6,
+    Constant = 0,
+    Add = 1,
+    Subtract = 2,
+    Multiply = 3,
+    Divide = 4,
+    Negate = 5,
+    Return = 6,
 }
 
 impl OpCode {
     pub fn from_u8(value: u8) -> Option<OpCode> {
         match value {
-            0 => Some(OpCode::OpConstant),
-            1 => Some(OpCode::OpAdd),
-            2 => Some(OpCode::OpSubtract),
-            3 => Some(OpCode::OpMultiply),
-            4 => Some(OpCode::OpDivide),
-            5 => Some(OpCode::OpNegate),
-            6 => Some(OpCode::OpReturn),
+            0 => Some(OpCode::Constant),
+            1 => Some(OpCode::Add),
+            2 => Some(OpCode::Subtract),
+            3 => Some(OpCode::Multiply),
+            4 => Some(OpCode::Divide),
+            5 => Some(OpCode::Negate),
+            6 => Some(OpCode::Return),
             _ => None,
         }
     }
@@ -90,13 +90,13 @@ impl Chunk {
         }
 
         match OpCode::from_u8(self.code[offset]) {
-            Some(OpCode::OpConstant) => self.fmt_constant_instruction(f, "OP_CONSTANT", offset),
-            Some(OpCode::OpNegate) => self.fmt_simple_instruction(f, "OP_NEGATE", offset),
-            Some(OpCode::OpAdd) => self.fmt_simple_instruction(f, "OP_ADD", offset),
-            Some(OpCode::OpSubtract) => self.fmt_simple_instruction(f, "OP_SUBTRACT", offset),
-            Some(OpCode::OpMultiply) => self.fmt_simple_instruction(f, "OP_MULTIPLY", offset),
-            Some(OpCode::OpDivide) => self.fmt_simple_instruction(f, "OP_DIVIDE", offset),
-            Some(OpCode::OpReturn) => self.fmt_simple_instruction(f, "OP_RETURN", offset),
+            Some(OpCode::Constant) => self.fmt_constant_instruction(f, "OP_CONSTANT", offset),
+            Some(OpCode::Negate) => self.fmt_simple_instruction(f, "OP_NEGATE", offset),
+            Some(OpCode::Add) => self.fmt_simple_instruction(f, "OP_ADD", offset),
+            Some(OpCode::Subtract) => self.fmt_simple_instruction(f, "OP_SUBTRACT", offset),
+            Some(OpCode::Multiply) => self.fmt_simple_instruction(f, "OP_MULTIPLY", offset),
+            Some(OpCode::Divide) => self.fmt_simple_instruction(f, "OP_DIVIDE", offset),
+            Some(OpCode::Return) => self.fmt_simple_instruction(f, "OP_RETURN", offset),
             _ => {
                 write!(f, "Unknown opcode {}", self.code[offset])?;
                 Ok(offset + 1)
