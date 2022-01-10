@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Value(pub f64);
 
 impl Display for Value {

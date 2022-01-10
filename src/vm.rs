@@ -1,19 +1,19 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::value::Value;
 
-static STACK_MAX: usize = 256;
+const STACK_MAX: usize = 256;
 
 pub struct VM {
     chunk: Chunk,
     ip: u8,
-    stack: Vec<Value>,
+    stack: [Value; STACK_MAX],
     stack_top: usize,
 }
 
 impl VM {
     pub fn new(chunk: Chunk) -> VM {
         let ip = 0;
-        let stack = Vec::with_capacity(STACK_MAX);
+        let stack = [Value(0f64); STACK_MAX];
         let stack_top = 0;
         VM {
             chunk,
@@ -36,7 +36,7 @@ impl VM {
             let op_code = OpCode::from_u8(instruction);
             match op_code {
                 Some(OpCode::Constant) => {
-                    let constant = self.read_constant().to_owned();
+                    let constant = self.read_constant();
                     self.push(constant);
                 }
                 Some(OpCode::Add) => {
@@ -75,12 +75,13 @@ impl VM {
     }
 
     fn push(&mut self, constant: Value) {
-        self.stack.push(constant);
+        self.stack[self.stack_top] = constant;
         self.stack_top += 1;
     }
 
     fn pop(&mut self) -> Value {
-        self.stack.pop().unwrap()
+        self.stack_top -= 1;
+        self.stack[self.stack_top].to_owned()
     }
 
     fn read_byte(&mut self) -> u8 {
@@ -89,9 +90,9 @@ impl VM {
         result
     }
 
-    fn read_constant(&mut self) -> &Value {
+    fn read_constant(&mut self) -> Value {
         let byte = self.read_byte();
-        &self.chunk.constants()[byte as usize]
+        self.chunk.constants()[byte as usize].to_owned()
     }
 
     #[cfg(debug_assertions)]
