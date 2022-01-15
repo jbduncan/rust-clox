@@ -1,21 +1,25 @@
 use crate::chunk::{Chunk, OpCode};
+use crate::compiler::Compiler;
 use crate::value::Value;
 
 const STACK_MAX: usize = 256;
 
-pub struct VM {
+pub struct VM<'a> {
+    source: &'a [u8],
     chunk: Chunk,
     ip: u8,
     stack: [Value; STACK_MAX],
     stack_top: usize,
 }
 
-impl VM {
-    pub fn new(chunk: Chunk) -> VM {
+impl VM<'_> {
+    pub fn new(source: &[u8]) -> VM {
+        let chunk = Chunk::new();
         let ip = 0;
         let stack = [Value(0f64); STACK_MAX];
         let stack_top = 0;
         VM {
+            source,
             chunk,
             ip,
             stack,
@@ -24,7 +28,8 @@ impl VM {
     }
 
     pub fn interpret(&mut self) -> InterpretResult {
-        self.run()
+        Compiler::new(self.source).compile();
+        InterpretResult::InterpretOk
     }
 
     fn run(&mut self) -> InterpretResult {
