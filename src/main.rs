@@ -12,18 +12,14 @@ fn main() {
 fn run_app() -> i32 {
     let args = env::args().collect::<Vec<String>>();
     match args.len() {
-        1 => {
-            repl().map_or_else(
-                |error| {
-                    eprintln!("{}", error);
-                    70
-                },
-                |_| 0
-            )
-        },
-        2 => {
-            run_file(&args[1])
-        },
+        1 => repl().map_or_else(
+            |error| {
+                eprintln!("{}", error);
+                70
+            },
+            |_| 0,
+        ),
+        2 => run_file(&args[1]),
         _ => {
             eprintln!("Usage: clox [path]");
             64
