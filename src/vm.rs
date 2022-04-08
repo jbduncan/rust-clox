@@ -13,13 +13,13 @@ pub struct VM<'a> {
 }
 
 impl VM<'_> {
-    pub fn new(source: &[u8]) -> VM {
+    pub fn new(source: &str) -> VM {
         let chunk = Chunk::new();
         let ip = 0;
         let stack = [Value(0f64); STACK_MAX];
         let stack_top = 0;
         VM {
-            source,
+            source: source.as_bytes(),
             chunk,
             ip,
             stack,
@@ -28,8 +28,18 @@ impl VM<'_> {
     }
 
     pub fn interpret(&mut self) -> InterpretResult {
-        Compiler::new(self.source).compile();
-        InterpretResult::InterpretOk
+        let chunk = Chunk::new();
+
+        if !Compiler::new(self.source).compile_into(&chunk) {
+            return InterpretResult::InterpretCompileError;
+        }
+
+        self.chunk = chunk;
+        self.ip = 0;
+
+        let result = self.run();
+
+        result
     }
 
     fn run(&mut self) -> InterpretResult {

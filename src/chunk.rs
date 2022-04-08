@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
-pub enum OpCode {
+pub(crate) enum OpCode {
     Constant = 0,
     Add = 1,
     Subtract = 2,
@@ -32,7 +32,7 @@ impl OpCode {
     }
 }
 
-pub struct Chunk {
+pub(crate) struct Chunk {
     code: Vec<u8>,
     lines: Vec<u32>,
     constants: Vec<Value>,

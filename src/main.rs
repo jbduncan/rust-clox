@@ -1,7 +1,6 @@
-use anyhow::Result;
 use rust_clox::vm::{InterpretResult, VM};
 use std::env;
-use std::fs::read;
+use std::fs::read_to_string;
 use std::io::{self, BufRead, Stdout, Write};
 use std::process::exit;
 
@@ -21,13 +20,13 @@ fn run_app() -> i32 {
         ),
         2 => run_file(&args[1]),
         _ => {
-            eprintln!("Usage: clox [path]");
+            eprintln!("Usage: rust-clox [path]");
             64
         }
     }
 }
 
-fn repl() -> Result<()> {
+fn repl() -> io::Result<()> {
     // A real-world REPL should be able to handle multiple lines gracefully.
     let stdin = io::stdin();
     let stdout = io::stdout();
@@ -37,7 +36,7 @@ fn repl() -> Result<()> {
 
         match lines.next() {
             Some(line) => {
-                VM::new(line?.as_bytes()).interpret();
+                VM::new(&line?).interpret();
             }
             None => {
                 println!();
@@ -53,15 +52,15 @@ fn print_immediately(mut stdout: &Stdout, text: &str) -> io::Result<()> {
 }
 
 fn run_file(path: &str) -> i32 {
-    read(path).map_or_else(
+    read_to_string(path).map_or_else(
         |error| {
             eprintln!("{}", error);
             74
         },
-        |source| match VM::new(source.as_slice()).interpret() {
+        |source| match VM::new(&source).interpret() {
             InterpretResult::InterpretOk => 0,
             InterpretResult::InterpretCompileError => 65,
             InterpretResult::InterpretRuntimeError => 70,
-        },
+        }
     )
 }

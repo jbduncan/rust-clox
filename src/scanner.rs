@@ -1,11 +1,11 @@
-pub struct Scanner<'a> {
+pub(crate) struct Scanner<'a> {
     source: &'a [u8],
     start: usize,
     current: usize,
     line: u32,
 }
 
-impl Scanner<'_> {
+impl <'a> Scanner<'a> {
     pub fn new(source: &[u8]) -> Scanner {
         Scanner {
             source,
@@ -15,7 +15,7 @@ impl Scanner<'_> {
         }
     }
 
-    pub fn scan_token(&mut self) -> Token {
+    pub fn scan_token(&mut self) -> Token<'a> {
         self.skip_whitespace();
         self.start = self.current;
 
@@ -124,7 +124,7 @@ impl Scanner<'_> {
         true
     }
 
-    fn make_token(&self, kind: TokenKind) -> Token {
+    fn make_token(&self, kind: TokenKind) -> Token<'a> {
         // let length = self.current - self.start;
         Token {
             kind,
@@ -133,7 +133,7 @@ impl Scanner<'_> {
         }
     }
 
-    fn error_token(&self, message: &'static str) -> Token {
+    fn error_token(&self, message: &'static str) -> Token<'static> {
         Token {
             kind: TokenKind::Error,
             lexeme: message.as_bytes(),
@@ -173,7 +173,7 @@ impl Scanner<'_> {
         }
     }
 
-    fn string(&mut self) -> Token {
+    fn string(&mut self) -> Token<'a> {
         while self.peek() != b'"' && !self.is_at_end() {
             if self.peek() == b'\n' {
                 self.line += 1;
@@ -190,7 +190,7 @@ impl Scanner<'_> {
         self.make_token(TokenKind::String)
     }
 
-    fn identifier(&mut self) -> Token {
+    fn identifier(&mut self) -> Token<'a> {
         while self.is_alpha(self.peek()) || self.is_digit(self.peek()) {
             self.advance();
         }
@@ -244,7 +244,7 @@ impl Scanner<'_> {
         TokenKind::Identifier
     }
 
-    fn number(&mut self) -> Token {
+    fn number(&mut self) -> Token<'a> {
         while self.is_digit(self.peek()) {
             self.advance();
         }
@@ -263,14 +263,21 @@ impl Scanner<'_> {
     }
 }
 
-pub struct Token<'a> {
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub(crate) struct Token<'a> {
     pub kind: TokenKind,
     pub lexeme: &'a [u8],
     pub line: u32,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum TokenKind {
+pub(crate) const NULL_TOKEN: Token = Token {
+    kind: TokenKind::Error,
+    lexeme: &[],
+    line: 0
+};
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub(crate) enum TokenKind {
     // Single-character tokens.
     LeftParen,
     RightParen,

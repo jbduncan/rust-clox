@@ -1,8 +1,8 @@
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(Copy, Clone)]
-pub struct Value(pub f64);
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub(crate) struct Value(pub f64);
 
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
