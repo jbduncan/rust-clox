@@ -19,6 +19,11 @@ impl VM<'_> {
         let stack = [Value(0f64); STACK_MAX];
         let stack_top = 0;
         VM {
+            // TODO: Converting to bytes here is forcing us to have to extract substrings that are
+            //       heap-allocated, whenever we need to print errors or extract Tokens of kind
+            //       TokenKind::Number.
+            //       Is there any way we can work with &str throughout the interpreter, rather than
+            //       &[u8]?
             source: source.as_bytes(),
             chunk,
             ip,

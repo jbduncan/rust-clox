@@ -48,11 +48,11 @@ impl Chunk {
     }
 
     pub fn code(&self) -> &Vec<u8> {
-        self.code.borrow()
+        &self.code
     }
 
     pub fn constants(&self) -> &Vec<Value> {
-        self.constants.borrow()
+        &self.constants
     }
 
     pub fn write_op_code(&mut self, op_code: OpCode, line: u32) {
@@ -64,9 +64,9 @@ impl Chunk {
         self.lines.push(line);
     }
 
-    pub fn add_constant(&mut self, value: Value) -> u8 {
+    pub fn add_constant(&mut self, value: Value) -> usize {
         self.constants.push(value);
-        (self.constants.len() - 1) as u8
+        self.constants.len() - 1
     }
 
     pub fn disassemble(&self, name: &str) {
@@ -137,3 +137,9 @@ impl Display for Chunk {
         Ok(())
     }
 }
+
+pub(crate) const NULL_CHUNK: Chunk = Chunk {
+    code: vec![],
+    lines: vec![],
+    constants: vec![],
+};

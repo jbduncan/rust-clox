@@ -5,7 +5,7 @@ pub(crate) struct Scanner<'a> {
     line: u32,
 }
 
-impl <'a> Scanner<'a> {
+impl<'a> Scanner<'a> {
     pub fn new(source: &[u8]) -> Scanner {
         Scanner {
             source,
@@ -39,39 +39,35 @@ impl <'a> Scanner<'a> {
             b'*' => self.make_token(TokenKind::Star),
             b'!' => {
                 let matches = self.matches(b'=');
-                self.make_token(
-                    if matches {
-                        TokenKind::BangEqual
-                    } else {
-                        TokenKind::Bang
-                    })
+                self.make_token(if matches {
+                    TokenKind::BangEqual
+                } else {
+                    TokenKind::Bang
+                })
             }
             b'=' => {
                 let matches = self.matches(b'=');
-                self.make_token(
-                    if matches {
-                        TokenKind::EqualEqual
-                    } else {
-                        TokenKind::Equal
-                    })
+                self.make_token(if matches {
+                    TokenKind::EqualEqual
+                } else {
+                    TokenKind::Equal
+                })
             }
             b'<' => {
                 let matches = self.matches(b'=');
-                self.make_token(
-                    if matches {
-                        TokenKind::LessEqual
-                    } else {
-                        TokenKind::Less
-                    })
+                self.make_token(if matches {
+                    TokenKind::LessEqual
+                } else {
+                    TokenKind::Less
+                })
             }
             b'>' => {
                 let matches = self.matches(b'=');
-                self.make_token(
-                    if matches {
-                        TokenKind::GreaterEqual
-                    } else {
-                        TokenKind::Greater
-                    })
+                self.make_token(if matches {
+                    TokenKind::GreaterEqual
+                } else {
+                    TokenKind::Greater
+                })
             }
             b'"' => self.string(),
             c if self.is_alpha(c) => self.identifier(),
@@ -85,9 +81,7 @@ impl <'a> Scanner<'a> {
     }
 
     fn is_alpha(&self, c: u8) -> bool {
-        (b'a'..=b'z').contains(&c) ||
-            (b'A'..=b'Z').contains(&c) ||
-            c == b'_'
+        (b'a'..=b'z').contains(&c) || (b'A'..=b'Z').contains(&c) || c == b'_'
     }
 
     fn is_digit(&self, c: u8) -> bool {
@@ -168,7 +162,7 @@ impl <'a> Scanner<'a> {
                         return;
                     }
                 }
-                _ => return
+                _ => return,
             }
         }
     }
@@ -208,7 +202,7 @@ impl <'a> Scanner<'a> {
                         b'a' => self.check_keyword(2, 3, b"lse", TokenKind::False),
                         b'o' => self.check_keyword(2, 1, b"r", TokenKind::For),
                         b'u' => self.check_keyword(2, 1, b"n", TokenKind::Fun),
-                        _ => TokenKind::Identifier
+                        _ => TokenKind::Identifier,
                     };
                 }
                 TokenKind::Identifier
@@ -224,20 +218,27 @@ impl <'a> Scanner<'a> {
                     return match self.source[self.start + 1] {
                         b'h' => self.check_keyword(2, 2, b"is", TokenKind::This),
                         b'r' => self.check_keyword(2, 2, b"ue", TokenKind::True),
-                        _ => TokenKind::Identifier
+                        _ => TokenKind::Identifier,
                     };
                 }
                 TokenKind::Identifier
             }
             b'v' => self.check_keyword(1, 2, b"ar", TokenKind::Var),
             b'w' => self.check_keyword(1, 4, b"hile", TokenKind::While),
-            _ => TokenKind::Identifier
+            _ => TokenKind::Identifier,
         }
     }
 
-    fn check_keyword(&self, start: usize, length: usize, rest: &[u8], kind: TokenKind) -> TokenKind {
+    fn check_keyword(
+        &self,
+        start: usize,
+        length: usize,
+        rest: &[u8],
+        kind: TokenKind,
+    ) -> TokenKind {
         if self.current - self.start == start + length
-            && self.source[(self.start + start)..(self.start + start + length)] == *rest {
+            && self.source[(self.start + start)..(self.start + start + length)] == *rest
+        {
             return kind;
         }
 
@@ -263,20 +264,28 @@ impl <'a> Scanner<'a> {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash)]
 pub(crate) struct Token<'a> {
     pub kind: TokenKind,
     pub lexeme: &'a [u8],
     pub line: u32,
 }
 
+impl<'a> Token<'a> {
+    pub fn lexeme_to_string(&self) -> String {
+        // The lexeme came into the VM from the source file, which is read as a Rust string, so the
+        // lexeme is guaranteed to be UTF-8.
+        String::from_utf8_lossy(self.lexeme).to_string() // TODO: is .to_string() needed?
+    }
+}
+
 pub(crate) const NULL_TOKEN: Token = Token {
     kind: TokenKind::Error,
     lexeme: &[],
-    line: 0
+    line: 0,
 };
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash)]
 pub(crate) enum TokenKind {
     // Single-character tokens.
     LeftParen,

@@ -61,6 +61,6 @@ fn run_file(path: &str) -> i32 {
             InterpretResult::InterpretOk => 0,
             InterpretResult::InterpretCompileError => 65,
             InterpretResult::InterpretRuntimeError => 70,
-        }
+        },
     )
 }
