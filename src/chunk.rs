@@ -1,8 +1,8 @@
 use crate::value::Value;
-use std::borrow::Borrow;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
+#[derive(Copy, Clone)]
 pub(crate) enum OpCode {
     Constant = 0,
     Add = 1,
@@ -28,7 +28,7 @@ impl OpCode {
     }
 
     pub fn to_u8(self) -> u8 {
-        return self as u8;
+        self as u8
     }
 }
 
@@ -69,18 +69,21 @@ impl Chunk {
         self.constants.len() - 1
     }
 
+    #[cfg(feature = "debug_trace_execution")]
     pub fn disassemble(&self, name: &str) {
         println!("== {} ==", name);
 
         print!("{}", self);
     }
 
+    #[cfg(feature = "debug_trace_execution")]
     pub fn disassemble_instruction(&self, offset: u8) {
         let mut buffer = String::new();
         let _ = self.fmt_instruction(&mut buffer, offset as usize);
         print!("{}", buffer);
     }
 
+    #[cfg(feature = "debug_trace_execution")]
     fn fmt_instruction(&self, f: &mut dyn fmt::Write, offset: usize) -> Result<usize, fmt::Error> {
         write!(f, "{:04} ", offset)?;
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
@@ -104,6 +107,7 @@ impl Chunk {
         }
     }
 
+    #[cfg(feature = "debug_trace_execution")]
     fn fmt_constant_instruction(
         &self,
         f: &mut dyn fmt::Write,
@@ -117,6 +121,7 @@ impl Chunk {
         Ok(offset + 2)
     }
 
+    #[cfg(feature = "debug_trace_execution")]
     fn fmt_simple_instruction(
         &self,
         f: &mut dyn fmt::Write,
@@ -128,6 +133,7 @@ impl Chunk {
     }
 }
 
+#[cfg(feature = "debug_trace_execution")]
 impl Display for Chunk {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut offset = 0;

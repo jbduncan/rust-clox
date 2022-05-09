@@ -33,23 +33,21 @@ impl VM<'_> {
     }
 
     pub fn interpret(&mut self) -> InterpretResult {
-        let chunk = Chunk::new();
+        let mut chunk = Chunk::new();
 
-        if !Compiler::new(self.source).compile_into(&chunk) {
+        if !Compiler::new(self.source, &mut chunk).compile() {
             return InterpretResult::InterpretCompileError;
         }
 
         self.chunk = chunk;
         self.ip = 0;
 
-        let result = self.run();
-
-        result
+        self.run()
     }
 
     fn run(&mut self) -> InterpretResult {
         loop {
-            #[cfg(debug_assertions)]
+            #[cfg(feature = "debug_trace_execution")]
             self.trace_execution();
 
             let instruction = self.read_byte();
@@ -115,7 +113,7 @@ impl VM<'_> {
         self.chunk.constants()[byte as usize].to_owned()
     }
 
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "debug_trace_execution")]
     fn trace_execution(&self) {
         print!("          ");
         for slot in self.stack.iter().take(self.stack_top) {
@@ -129,6 +127,7 @@ impl VM<'_> {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum InterpretResult {
     InterpretOk,
     InterpretCompileError,

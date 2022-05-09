@@ -28,11 +28,12 @@ fn run_app() -> i32 {
 
 fn repl() -> io::Result<()> {
     // A real-world REPL should be able to handle multiple lines gracefully.
+    // TODO: Address this comment.
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut lines = stdin.lock().lines();
     loop {
-        print_immediately(&stdout, "> ")?;
+        print(&stdout, "> ")?;
 
         match lines.next() {
             Some(line) => {
@@ -46,7 +47,7 @@ fn repl() -> io::Result<()> {
     }
 }
 
-fn print_immediately(mut stdout: &Stdout, text: &str) -> io::Result<()> {
+fn print(mut stdout: &Stdout, text: &str) -> io::Result<()> {
     print!("{}", text);
     stdout.flush()
 }
