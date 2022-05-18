@@ -127,7 +127,7 @@ impl VM<'_> {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Hash)]
 pub enum InterpretResult {
     InterpretOk,
     InterpretCompileError,

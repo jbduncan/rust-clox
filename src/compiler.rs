@@ -10,7 +10,7 @@ struct Parser<'a> {
 }
 
 // Defines the order in which parsed tokens are evaluated.
-#[derive(Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Hash)]
 enum Precedence {
     None = 0,
     Assignment = 1,
@@ -72,6 +72,22 @@ impl<'a> ParseRule<'a> {
             infix,
             precedence,
         }
+    }
+
+    fn of(prefix: ParseFn<'a>, infix: ParseFn<'a>, precedence: Precedence) -> Self {
+        ParseRule::new(Some(prefix), Some(infix), precedence)
+    }
+
+    fn of_prefix(prefix: ParseFn<'a>, precedence: Precedence) -> Self {
+        ParseRule::new(Some(prefix), None, precedence)
+    }
+
+    fn of_infix(infix: ParseFn<'a>, precedence: Precedence) -> Self {
+        ParseRule::new(None, Some(infix), precedence)
+    }
+
+    fn none() -> Self {
+        ParseRule::new(None, None, Precedence::None)
     }
 }
 
@@ -332,206 +348,48 @@ impl<'a> Compiler<'a> {
     }
 
     fn get_rule(&self, kind: TokenKind) -> ParseRule<'a> {
+        use Precedence::*;
         match kind {
-            TokenKind::LeftParen => {
-                ParseRule::new(Some(Compiler::grouping), None, Precedence::None)
-            }
-            // TODO: Replace all struct constructions with ParseRule::new
-            TokenKind::RightParen => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::LeftBrace => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::RightBrace => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Comma => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Dot => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Minus => ParseRule {
-                prefix: Some(Compiler::unary),
-                infix: Some(Compiler::binary),
-                precedence: Precedence::Term,
-            },
-            TokenKind::Plus => ParseRule {
-                prefix: None,
-                infix: Some(Compiler::binary),
-                precedence: Precedence::Term,
-            },
-            TokenKind::Semicolon => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Slash => ParseRule {
-                prefix: None,
-                infix: Some(Compiler::binary),
-                precedence: Precedence::Factor,
-            },
-            TokenKind::Star => ParseRule {
-                prefix: None,
-                infix: Some(Compiler::binary),
-                precedence: Precedence::Factor,
-            },
-            TokenKind::Bang => ParseRule {
-                prefix: None,
-                infix: Some(Compiler::binary),
-                precedence: Precedence::Factor,
-            },
-            TokenKind::BangEqual => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Equal => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::EqualEqual => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Greater => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::GreaterEqual => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Less => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::LessEqual => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Identifier => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::String => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Number => ParseRule {
-                prefix: Some(Compiler::number),
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::And => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Class => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Else => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::False => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::For => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Fun => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::If => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Nil => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Or => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Print => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Return => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Super => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::This => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::True => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Var => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::While => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Error => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-            TokenKind::Eof => ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
+            TokenKind::LeftParen => ParseRule::of_prefix(Compiler::grouping, None),
+            TokenKind::RightParen => ParseRule::none(),
+            TokenKind::LeftBrace => ParseRule::none(),
+            TokenKind::RightBrace => ParseRule::none(),
+            TokenKind::Comma => ParseRule::none(),
+            TokenKind::Dot => ParseRule::none(),
+            TokenKind::Minus => ParseRule::of(Compiler::unary, Compiler::binary, Term),
+            TokenKind::Plus => ParseRule::of_infix(Compiler::binary, Term),
+            TokenKind::Semicolon => ParseRule::none(),
+            TokenKind::Slash => ParseRule::of_infix(Compiler::binary, Factor),
+            TokenKind::Star => ParseRule::of_infix(Compiler::binary, Factor),
+            TokenKind::Bang => ParseRule::of_infix(Compiler::binary, Factor),
+            TokenKind::BangEqual => ParseRule::none(),
+            TokenKind::Equal => ParseRule::none(),
+            TokenKind::EqualEqual => ParseRule::none(),
+            TokenKind::Greater => ParseRule::none(),
+            TokenKind::GreaterEqual => ParseRule::none(),
+            TokenKind::Less => ParseRule::none(),
+            TokenKind::LessEqual => ParseRule::none(),
+            TokenKind::Identifier => ParseRule::none(),
+            TokenKind::String => ParseRule::none(),
+            TokenKind::Number => ParseRule::of_prefix(Compiler::number, None),
+            TokenKind::And => ParseRule::none(),
+            TokenKind::Class => ParseRule::none(),
+            TokenKind::Else => ParseRule::none(),
+            TokenKind::False => ParseRule::none(),
+            TokenKind::For => ParseRule::none(),
+            TokenKind::Fun => ParseRule::none(),
+            TokenKind::If => ParseRule::none(),
+            TokenKind::Nil => ParseRule::none(),
+            TokenKind::Or => ParseRule::none(),
+            TokenKind::Print => ParseRule::none(),
+            TokenKind::Return => ParseRule::none(),
+            TokenKind::Super => ParseRule::none(),
+            TokenKind::This => ParseRule::none(),
+            TokenKind::True => ParseRule::none(),
+            TokenKind::Var => ParseRule::none(),
+            TokenKind::While => ParseRule::none(),
+            TokenKind::Error => ParseRule::none(),
+            TokenKind::Eof => ParseRule::none(),
         }
     }
 }

@@ -2,7 +2,7 @@ use crate::value::Value;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Hash)]
 pub(crate) enum OpCode {
     Constant = 0,
     Add = 1,
