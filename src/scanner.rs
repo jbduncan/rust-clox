@@ -2,7 +2,7 @@ pub(crate) struct Scanner<'a> {
     source: &'a [u8],
     start: usize,
     current: usize,
-    line: u32,
+    line: usize,
 }
 
 impl<'a> Scanner<'a> {
@@ -268,7 +268,7 @@ impl<'a> Scanner<'a> {
 pub(crate) struct Token<'a> {
     pub kind: TokenKind,
     pub lexeme: &'a [u8],
-    pub line: u32,
+    pub line: usize,
 }
 
 impl<'a> Token<'a> {

@@ -7,7 +7,7 @@ const STACK_MAX: usize = 256;
 pub struct VM<'a> {
     source: &'a [u8],
     chunk: Chunk,
-    ip: u8,
+    ip: usize,
     stack: [Value; STACK_MAX],
     stack_top: usize,
 }
@@ -16,7 +16,7 @@ impl VM<'_> {
     pub fn new(source: &str) -> VM {
         let chunk = Chunk::new();
         let ip = 0;
-        let stack = [Value(0f64); STACK_MAX];
+        let stack = [Value::Number(0f64); STACK_MAX];
         let stack_top = 0;
         VM {
             // TODO: Converting to bytes here is forcing us to have to extract substrings that are
@@ -42,10 +42,13 @@ impl VM<'_> {
         self.chunk = chunk;
         self.ip = 0;
 
-        self.run()
+        match self.run() {
+            Ok(()) => InterpretResult::InterpretOk,
+            Err(err) => err.to_interpret_result()
+        }
     }
 
-    fn run(&mut self) -> InterpretResult {
+    fn run(&mut self) -> Result<(), InterpretError> {
         loop {
             #[cfg(feature = "debug_trace_execution")]
             self.trace_execution();
@@ -58,36 +61,54 @@ impl VM<'_> {
                     self.push(constant);
                 }
                 Some(OpCode::Add) => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(a + b);
+                    self.binary_op(#[inline] |a, b| a + b, Value::Number)?;
                 }
                 Some(OpCode::Subtract) => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(a - b);
+                    self.binary_op(#[inline] |a, b| a - b, Value::Number)?;
                 }
                 Some(OpCode::Multiply) => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(a * b);
+                    self.binary_op(#[inline] |a, b| a * b, Value::Number)?;
                 }
                 Some(OpCode::Divide) => {
-                    let b = self.pop();
-                    let a = self.pop();
-                    self.push(a / b);
+                    self.binary_op(#[inline] |a, b| a / b, Value::Number)?;
                 }
                 Some(OpCode::Negate) => {
-                    let value = -self.pop();
-                    self.push(value);
+                    match self.peek(0) {
+                        Value::Number(number) => {
+                            self.pop();
+                            self.push(Value::Number(-number))
+                        },
+                        _ => {
+                            // See [1].
+                            self.runtime_error("Operand must be a number.");
+                            return Err(InterpretError::InterpretRuntimeError);
+                        }
+                    }
                 }
                 Some(OpCode::Return) => {
                     println!("{}", self.pop());
-                    return InterpretResult::InterpretOk;
+                    return Ok(());
                 }
                 None => {
                     panic!("Unknown opcode {}", instruction);
                 }
+            }
+        }
+    }
+
+    #[inline]
+    fn binary_op<T>(&mut self, op: fn(f64, f64) -> T, value_type: fn(T) -> Value) -> Result<(), InterpretError> {
+        match (self.peek(0), self.peek(1)) {
+            (Value::Number(b), Value::Number(a)) => {
+                self.pop();
+                self.pop();
+                self.push(value_type(op(a, b)));
+                Ok(())
+            }
+            _ => {
+                // See [1].
+                self.runtime_error("Operands must be numbers.");
+                Err(InterpretError::InterpretRuntimeError)
             }
         }
     }
@@ -99,18 +120,28 @@ impl VM<'_> {
 
     fn pop(&mut self) -> Value {
         self.stack_top -= 1;
-        self.stack[self.stack_top].to_owned()
+        self.stack[self.stack_top]
+    }
+
+    fn peek(&self, distance: usize) -> Value {
+        self.stack[self.stack_top - 1 - distance]
     }
 
     fn read_byte(&mut self) -> u8 {
-        let result = self.chunk.code()[self.ip as usize];
+        let result = self.chunk.code[self.ip as usize];
         self.ip += 1;
         result
     }
 
     fn read_constant(&mut self) -> Value {
         let byte = self.read_byte();
-        self.chunk.constants()[byte as usize].to_owned()
+        self.chunk.constants[byte as usize]
+    }
+
+    fn runtime_error(&self, message: &str) {
+        eprintln!("{}", message);
+        let line = self.chunk.lines[self.ip - 1];
+        eprintln!("[line {}] in script", line);
     }
 
     #[cfg(feature = "debug_trace_execution")]
@@ -123,13 +154,30 @@ impl VM<'_> {
         }
         println!();
         self.chunk
-            .disassemble_instruction(self.ip - self.chunk.code()[0]);
+            .disassemble_instruction(self.ip - self.chunk.code[0] as usize);
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash)]
 pub enum InterpretResult {
     InterpretOk,
     InterpretCompileError,
     InterpretRuntimeError,
 }
+
+enum InterpretError {
+    InterpretCompileError,
+    InterpretRuntimeError,
+}
+
+impl InterpretError {
+    fn to_interpret_result(&self) -> InterpretResult {
+        match self {
+            InterpretError::InterpretCompileError => InterpretResult::InterpretCompileError,
+            InterpretError::InterpretRuntimeError => InterpretResult::InterpretRuntimeError
+        }
+    }
+}
+
+// [1] Stopping the program on a runtime error, without giving the user any control on what happens,
+//     is not ideal, so in a real language, this would be changed.

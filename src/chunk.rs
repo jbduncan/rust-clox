@@ -2,7 +2,7 @@ use crate::value::Value;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
-#[derive(Copy, Clone, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash)]
 pub(crate) enum OpCode {
     Constant = 0,
     Add = 1,
@@ -33,9 +33,9 @@ impl OpCode {
 }
 
 pub(crate) struct Chunk {
-    code: Vec<u8>,
-    lines: Vec<u32>,
-    constants: Vec<Value>,
+    pub code: Vec<u8>,
+    pub lines: Vec<usize>,
+    pub constants: Vec<Value>,
 }
 
 impl Chunk {
@@ -47,19 +47,15 @@ impl Chunk {
         }
     }
 
-    pub fn code(&self) -> &Vec<u8> {
-        &self.code
-    }
-
     pub fn constants(&self) -> &Vec<Value> {
         &self.constants
     }
 
-    pub fn write_op_code(&mut self, op_code: OpCode, line: u32) {
+    pub fn write_op_code(&mut self, op_code: OpCode, line: usize) {
         self.write_byte(op_code.to_u8(), line);
     }
 
-    pub fn write_byte(&mut self, byte: u8, line: u32) {
+    pub fn write_byte(&mut self, byte: u8, line: usize) {
         self.code.push(byte);
         self.lines.push(line);
     }
@@ -77,9 +73,9 @@ impl Chunk {
     }
 
     #[cfg(feature = "debug_trace_execution")]
-    pub fn disassemble_instruction(&self, offset: u8) {
+    pub fn disassemble_instruction(&self, offset: usize) {
         let mut buffer = String::new();
-        let _ = self.fmt_instruction(&mut buffer, offset as usize);
+        let _ = self.fmt_instruction(&mut buffer, offset);
         print!("{}", buffer);
     }
 

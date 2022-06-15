@@ -276,7 +276,7 @@ impl<'a> Compiler<'a> {
     }
 
     fn number(&mut self) {
-        let value = Value(
+        let value = Value::Number(
             self.parser
                 .previous
                 .lexeme_to_string()
