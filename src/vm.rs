@@ -60,6 +60,15 @@ impl VM<'_> {
                     let constant = self.read_constant();
                     self.push(constant);
                 }
+                Some(OpCode::Nil) => {
+                    self.push(Value::Nil);
+                }
+                Some(OpCode::True) => {
+                    self.push(Value::Bool(true));
+                }
+                Some(OpCode::False) => {
+                    self.push(Value::Bool(false));
+                }
                 Some(OpCode::Add) => {
                     self.binary_op(#[inline] |a, b| a + b, Value::Number)?;
                 }
@@ -154,7 +163,8 @@ impl VM<'_> {
         }
         println!();
         self.chunk
-            .disassemble_instruction(self.ip - self.chunk.code[0] as usize);
+            // TODO: Is the commented-out code below needed? It causes panics for 'true' and 'false'
+            .disassemble_instruction(self.ip /*- self.chunk.code[0] as usize*/);
     }
 }
 

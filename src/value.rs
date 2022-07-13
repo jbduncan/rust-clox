@@ -10,8 +10,8 @@ pub(crate) enum Value {
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Bool(boolean) => todo!(), // write!(f, "{}", boolean),
-            Value::Nil => todo!(), // write!(f, "nil"),
+            Value::Bool(boolean) => write!(f, "{}", boolean),
+            Value::Nil => write!(f, "nil"),
             Value::Number(number) => write!(f, "{}", number),
         }
     }

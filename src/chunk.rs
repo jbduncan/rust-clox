@@ -5,24 +5,30 @@ use std::fmt::{Display, Formatter};
 #[derive(Copy, Clone, Debug, PartialEq, Hash)]
 pub(crate) enum OpCode {
     Constant = 0,
-    Add = 1,
-    Subtract = 2,
-    Multiply = 3,
-    Divide = 4,
-    Negate = 5,
-    Return = 6,
+    Nil = 1,
+    True = 2,
+    False = 3,
+    Add = 4,
+    Subtract = 5,
+    Multiply = 6,
+    Divide = 7,
+    Negate = 8,
+    Return = 9,
 }
 
 impl OpCode {
     pub fn from_u8(value: u8) -> Option<OpCode> {
         match value {
             0 => Some(OpCode::Constant),
-            1 => Some(OpCode::Add),
-            2 => Some(OpCode::Subtract),
-            3 => Some(OpCode::Multiply),
-            4 => Some(OpCode::Divide),
-            5 => Some(OpCode::Negate),
-            6 => Some(OpCode::Return),
+            1 => Some(OpCode::Nil),
+            2 => Some(OpCode::True),
+            3 => Some(OpCode::False),
+            4 => Some(OpCode::Add),
+            5 => Some(OpCode::Subtract),
+            6 => Some(OpCode::Multiply),
+            7 => Some(OpCode::Divide),
+            8 => Some(OpCode::Negate),
+            9 => Some(OpCode::Return),
             _ => None,
         }
     }
@@ -90,6 +96,9 @@ impl Chunk {
 
         match OpCode::from_u8(self.code[offset]) {
             Some(OpCode::Constant) => self.fmt_constant_instruction(f, "OP_CONSTANT", offset),
+            Some(OpCode::Nil) => self.fmt_simple_instruction(f, "OP_NIL", offset),
+            Some(OpCode::True) => self.fmt_simple_instruction(f, "OP_TRUE", offset),
+            Some(OpCode::False) => self.fmt_simple_instruction(f, "OP_FALSE", offset),
             Some(OpCode::Negate) => self.fmt_simple_instruction(f, "OP_NEGATE", offset),
             Some(OpCode::Add) => self.fmt_simple_instruction(f, "OP_ADD", offset),
             Some(OpCode::Subtract) => self.fmt_simple_instruction(f, "OP_SUBTRACT", offset),

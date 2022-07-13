@@ -174,6 +174,10 @@ impl<'a> Compiler<'a> {
         eprintln!(": {}", message);
     }
 
+    fn emit_op_code(&mut self, op_code: OpCode) {
+        self.emit_byte(op_code.to_u8())
+    }
+
     fn emit_byte(&mut self, byte: u8) {
         self.compiling_chunk
             .write_byte(byte, self.parser.previous.line);
@@ -185,7 +189,7 @@ impl<'a> Compiler<'a> {
     }
 
     fn emit_return(&mut self) {
-        self.emit_byte(OpCode::Return.to_u8())
+        self.emit_op_code(OpCode::Return)
     }
 
     fn emit_constant(&mut self, value: Value) {
@@ -254,16 +258,14 @@ impl<'a> Compiler<'a> {
         let precedence = rule.precedence.next();
         self.parse_precedence(precedence);
 
-        self.emit_byte(
+        self.emit_op_code(
             match operator_kind {
                 TokenKind::Minus => OpCode::Subtract,
                 TokenKind::Plus => OpCode::Add,
                 TokenKind::Slash => OpCode::Divide,
                 TokenKind::Star => OpCode::Multiply,
                 _ => unreachable!(),
-            }
-            .to_u8(),
-        );
+            });
     }
 
     fn expression(&mut self) {
@@ -284,6 +286,16 @@ impl<'a> Compiler<'a> {
                 .unwrap_or(0f64),
         );
         self.emit_constant(value);
+    }
+
+    fn literal(&mut self) {
+        self.emit_op_code(
+            match self.parser.previous.kind {
+                TokenKind::False => OpCode::False,
+                TokenKind::Nil => OpCode::Nil,
+                TokenKind::True => OpCode::True,
+                _ => unreachable!()
+            })
     }
 
     // Robert Nystrom, the author of craftinginterpreters.com, has this to say about unary():
@@ -319,7 +331,7 @@ impl<'a> Compiler<'a> {
 
         // Emit the operator instruction.
         match operator_kind {
-            TokenKind::Minus => self.emit_byte(OpCode::Negate.to_u8()),
+            TokenKind::Minus => self.emit_op_code(OpCode::Negate),
             _ => unreachable!(),
         }
     }
@@ -375,17 +387,17 @@ impl<'a> Compiler<'a> {
             TokenKind::And => ParseRule::none(),
             TokenKind::Class => ParseRule::none(),
             TokenKind::Else => ParseRule::none(),
-            TokenKind::False => ParseRule::none(),
+            TokenKind::False => ParseRule::of_prefix(Compiler::literal, None),
             TokenKind::For => ParseRule::none(),
             TokenKind::Fun => ParseRule::none(),
             TokenKind::If => ParseRule::none(),
-            TokenKind::Nil => ParseRule::none(),
+            TokenKind::Nil => ParseRule::of_prefix(Compiler::literal, None),
             TokenKind::Or => ParseRule::none(),
             TokenKind::Print => ParseRule::none(),
             TokenKind::Return => ParseRule::none(),
             TokenKind::Super => ParseRule::none(),
             TokenKind::This => ParseRule::none(),
-            TokenKind::True => ParseRule::none(),
+            TokenKind::True => ParseRule::of_prefix(Compiler::literal, None),
             TokenKind::Var => ParseRule::none(),
             TokenKind::While => ParseRule::none(),
             TokenKind::Error => ParseRule::none(),
