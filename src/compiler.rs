@@ -178,6 +178,10 @@ impl<'a> Compiler<'a> {
         self.emit_byte(op_code.to_u8())
     }
 
+    fn emit_op_codes(&mut self, first: OpCode, second: OpCode) {
+        self.emit_bytes(first.to_u8(), second.to_u8())
+    }
+
     fn emit_byte(&mut self, byte: u8) {
         self.compiling_chunk
             .write_byte(byte, self.parser.previous.line);
@@ -258,14 +262,29 @@ impl<'a> Compiler<'a> {
         let precedence = rule.precedence.next();
         self.parse_precedence(precedence);
 
-        self.emit_op_code(
-            match operator_kind {
-                TokenKind::Minus => OpCode::Subtract,
-                TokenKind::Plus => OpCode::Add,
-                TokenKind::Slash => OpCode::Divide,
-                TokenKind::Star => OpCode::Multiply,
-                _ => unreachable!(),
-            });
+        // Robert Nystrom says that for the match below below, more care would be required because
+        // IEEE 754 mandates that "all comparison operators return false when an operand is NaN.
+        // That means NaN <= 1 is false and NaN > 1 is also false. But our desugaring assumes the
+        // latter is always the negation of the former. For the book, we won’t get hung up on this,
+        // but these kinds of details will matter in your real language implementations."
+        //
+        // He also says that additional instructions for !=, <= and >= should be made for a real VM
+        // anyway if the goal is performance.
+        //
+        // TODO: Address this comment.
+        match operator_kind {
+            TokenKind::BangEqual => self.emit_op_codes(OpCode::Equal, OpCode::Not),
+            TokenKind::EqualEqual => self.emit_op_code(OpCode::Equal),
+            TokenKind::Greater => self.emit_op_code(OpCode::Greater),
+            TokenKind::GreaterEqual => self.emit_op_codes(OpCode::Less, OpCode::Not),
+            TokenKind::Less => self.emit_op_code(OpCode::Less),
+            TokenKind::LessEqual => self.emit_op_codes(OpCode::Greater, OpCode::Not),
+            TokenKind::Minus => self.emit_op_code(OpCode::Subtract),
+            TokenKind::Plus => self.emit_op_code(OpCode::Add),
+            TokenKind::Slash => self.emit_op_code(OpCode::Divide),
+            TokenKind::Star => self.emit_op_code(OpCode::Multiply),
+            _ => unreachable!(),
+        }
     }
 
     fn expression(&mut self) {
@@ -289,13 +308,12 @@ impl<'a> Compiler<'a> {
     }
 
     fn literal(&mut self) {
-        self.emit_op_code(
-            match self.parser.previous.kind {
-                TokenKind::False => OpCode::False,
-                TokenKind::Nil => OpCode::Nil,
-                TokenKind::True => OpCode::True,
-                _ => unreachable!()
-            })
+        self.emit_op_code(match self.parser.previous.kind {
+            TokenKind::False => OpCode::False,
+            TokenKind::Nil => OpCode::Nil,
+            TokenKind::True => OpCode::True,
+            _ => unreachable!(),
+        })
     }
 
     // Robert Nystrom, the author of craftinginterpreters.com, has this to say about unary():
@@ -331,6 +349,7 @@ impl<'a> Compiler<'a> {
 
         // Emit the operator instruction.
         match operator_kind {
+            TokenKind::Bang => self.emit_op_code(OpCode::Not),
             TokenKind::Minus => self.emit_op_code(OpCode::Negate),
             _ => unreachable!(),
         }
@@ -360,44 +379,45 @@ impl<'a> Compiler<'a> {
     }
 
     fn get_rule(&self, kind: TokenKind) -> ParseRule<'a> {
-        use Precedence::*;
         match kind {
-            TokenKind::LeftParen => ParseRule::of_prefix(Compiler::grouping, None),
+            TokenKind::LeftParen => ParseRule::of_prefix(Compiler::grouping, Precedence::None),
             TokenKind::RightParen => ParseRule::none(),
             TokenKind::LeftBrace => ParseRule::none(),
             TokenKind::RightBrace => ParseRule::none(),
             TokenKind::Comma => ParseRule::none(),
             TokenKind::Dot => ParseRule::none(),
-            TokenKind::Minus => ParseRule::of(Compiler::unary, Compiler::binary, Term),
-            TokenKind::Plus => ParseRule::of_infix(Compiler::binary, Term),
+            TokenKind::Minus => ParseRule::of(Compiler::unary, Compiler::binary, Precedence::Term),
+            TokenKind::Plus => ParseRule::of_infix(Compiler::binary, Precedence::Term),
             TokenKind::Semicolon => ParseRule::none(),
-            TokenKind::Slash => ParseRule::of_infix(Compiler::binary, Factor),
-            TokenKind::Star => ParseRule::of_infix(Compiler::binary, Factor),
-            TokenKind::Bang => ParseRule::of_infix(Compiler::binary, Factor),
-            TokenKind::BangEqual => ParseRule::none(),
-            TokenKind::Equal => ParseRule::none(),
-            TokenKind::EqualEqual => ParseRule::none(),
-            TokenKind::Greater => ParseRule::none(),
-            TokenKind::GreaterEqual => ParseRule::none(),
-            TokenKind::Less => ParseRule::none(),
-            TokenKind::LessEqual => ParseRule::none(),
+            TokenKind::Slash => ParseRule::of_infix(Compiler::binary, Precedence::Factor),
+            TokenKind::Star => ParseRule::of_infix(Compiler::binary, Precedence::Factor),
+            TokenKind::Bang => ParseRule::of_prefix(Compiler::unary, Precedence::None),
+            TokenKind::BangEqual => ParseRule::of_infix(Compiler::binary, Precedence::Equality),
+            TokenKind::Equal => ParseRule::of_infix(Compiler::binary, Precedence::None),
+            TokenKind::EqualEqual => ParseRule::of_infix(Compiler::binary, Precedence::Equality),
+            TokenKind::Greater => ParseRule::of_infix(Compiler::binary, Precedence::Comparison),
+            TokenKind::GreaterEqual => {
+                ParseRule::of_infix(Compiler::binary, Precedence::Comparison)
+            }
+            TokenKind::Less => ParseRule::of_infix(Compiler::binary, Precedence::Comparison),
+            TokenKind::LessEqual => ParseRule::of_infix(Compiler::binary, Precedence::Comparison),
             TokenKind::Identifier => ParseRule::none(),
             TokenKind::String => ParseRule::none(),
-            TokenKind::Number => ParseRule::of_prefix(Compiler::number, None),
+            TokenKind::Number => ParseRule::of_prefix(Compiler::number, Precedence::None),
             TokenKind::And => ParseRule::none(),
             TokenKind::Class => ParseRule::none(),
             TokenKind::Else => ParseRule::none(),
-            TokenKind::False => ParseRule::of_prefix(Compiler::literal, None),
+            TokenKind::False => ParseRule::of_prefix(Compiler::literal, Precedence::None),
             TokenKind::For => ParseRule::none(),
             TokenKind::Fun => ParseRule::none(),
             TokenKind::If => ParseRule::none(),
-            TokenKind::Nil => ParseRule::of_prefix(Compiler::literal, None),
+            TokenKind::Nil => ParseRule::of_prefix(Compiler::literal, Precedence::None),
             TokenKind::Or => ParseRule::none(),
             TokenKind::Print => ParseRule::none(),
             TokenKind::Return => ParseRule::none(),
             TokenKind::Super => ParseRule::none(),
             TokenKind::This => ParseRule::none(),
-            TokenKind::True => ParseRule::of_prefix(Compiler::literal, None),
+            TokenKind::True => ParseRule::of_prefix(Compiler::literal, Precedence::None),
             TokenKind::Var => ParseRule::none(),
             TokenKind::While => ParseRule::none(),
             TokenKind::Error => ParseRule::none(),

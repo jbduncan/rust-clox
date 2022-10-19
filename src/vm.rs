@@ -44,10 +44,21 @@ impl VM<'_> {
 
         match self.run() {
             Ok(()) => InterpretResult::InterpretOk,
-            Err(err) => err.to_interpret_result()
+            Err(err) => err.to_interpret_result(),
         }
     }
 
+    // The "beating heart" of the VM.
+    //
+    // According to author of craftinginterpreters.com, Robert Nystrom, if you
+    // wanted to make this more efficient, you'd need to read up on:
+    // - "direct threaded code"
+    // - "jump table"
+    // - "computed goto"
+    //
+    // He says that in C, the fastest techniques would need non-standard
+    // extensions to C or handwritten assembly code. This implies that in Rust,
+    // unsafe code or some other technique would be needed.
     fn run(&mut self) -> Result<(), InterpretError> {
         loop {
             #[cfg(feature = "debug_trace_execution")]
@@ -69,24 +80,63 @@ impl VM<'_> {
                 Some(OpCode::False) => {
                     self.push(Value::Bool(false));
                 }
+                Some(OpCode::Equal) => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.push(Value::Bool(a == b));
+                }
+                Some(OpCode::Greater) => {
+                    self.binary_op(
+                        #[inline]
+                        |a, b| a > b,
+                        Value::Bool,
+                    )?;
+                }
+                Some(OpCode::Less) => {
+                    self.binary_op(
+                        #[inline]
+                        |a, b| a < b,
+                        Value::Bool,
+                    )?;
+                }
                 Some(OpCode::Add) => {
-                    self.binary_op(#[inline] |a, b| a + b, Value::Number)?;
+                    self.binary_op(
+                        #[inline]
+                        |a, b| a + b,
+                        Value::Number,
+                    )?;
                 }
                 Some(OpCode::Subtract) => {
-                    self.binary_op(#[inline] |a, b| a - b, Value::Number)?;
+                    self.binary_op(
+                        #[inline]
+                        |a, b| a - b,
+                        Value::Number,
+                    )?;
                 }
                 Some(OpCode::Multiply) => {
-                    self.binary_op(#[inline] |a, b| a * b, Value::Number)?;
+                    self.binary_op(
+                        #[inline]
+                        |a, b| a * b,
+                        Value::Number,
+                    )?;
                 }
                 Some(OpCode::Divide) => {
-                    self.binary_op(#[inline] |a, b| a / b, Value::Number)?;
+                    self.binary_op(
+                        #[inline]
+                        |a, b| a / b,
+                        Value::Number,
+                    )?;
+                }
+                Some(OpCode::Not) => {
+                    let value = self.pop();
+                    self.push(Value::Bool(self.is_falsey(value)))
                 }
                 Some(OpCode::Negate) => {
                     match self.peek(0) {
                         Value::Number(number) => {
                             self.pop();
                             self.push(Value::Number(-number))
-                        },
+                        }
                         _ => {
                             // See [1].
                             self.runtime_error("Operand must be a number.");
@@ -106,7 +156,11 @@ impl VM<'_> {
     }
 
     #[inline]
-    fn binary_op<T>(&mut self, op: fn(f64, f64) -> T, value_type: fn(T) -> Value) -> Result<(), InterpretError> {
+    fn binary_op<T>(
+        &mut self,
+        op: fn(f64, f64) -> T,
+        value_type: fn(T) -> Value,
+    ) -> Result<(), InterpretError> {
         match (self.peek(0), self.peek(1)) {
             (Value::Number(b), Value::Number(a)) => {
                 self.pop();
@@ -119,6 +173,14 @@ impl VM<'_> {
                 self.runtime_error("Operands must be numbers.");
                 Err(InterpretError::InterpretRuntimeError)
             }
+        }
+    }
+
+    fn is_falsey(&self, value: Value) -> bool {
+        match value {
+            Value::Bool(boolean) => !boolean,
+            Value::Nil => true,
+            Value::Number(_) => false,
         }
     }
 
@@ -184,7 +246,7 @@ impl InterpretError {
     fn to_interpret_result(&self) -> InterpretResult {
         match self {
             InterpretError::InterpretCompileError => InterpretResult::InterpretCompileError,
-            InterpretError::InterpretRuntimeError => InterpretResult::InterpretRuntimeError
+            InterpretError::InterpretRuntimeError => InterpretResult::InterpretRuntimeError,
         }
     }
 }
