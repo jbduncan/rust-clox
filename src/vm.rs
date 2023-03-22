@@ -16,7 +16,9 @@ impl VM<'_> {
     pub fn new(source: &str) -> VM {
         let chunk = Chunk::new();
         let ip = 0;
-        let stack = [Value::Number(0f64); STACK_MAX];
+        const INIT: Value = Value::Number(0f64);
+        const SIZE: usize = 256;
+        let stack = [INIT; SIZE];
         let stack_top = 0;
         VM {
             // TODO: Converting to bytes here is forcing us to have to extract substrings that are
@@ -32,20 +34,17 @@ impl VM<'_> {
         }
     }
 
-    pub fn interpret(&mut self) -> InterpretResult {
+    pub fn interpret(&mut self) -> Result<(), InterpretError> {
         let mut chunk = Chunk::new();
 
         if !Compiler::new(self.source, &mut chunk).compile() {
-            return InterpretResult::InterpretCompileError;
+            return Err(InterpretError::InterpretCompileError);
         }
 
         self.chunk = chunk;
         self.ip = 0;
 
-        match self.run() {
-            Ok(()) => InterpretResult::InterpretOk,
-            Err(err) => err.to_interpret_result(),
-        }
+        self.run()
     }
 
     // The "beating heart" of the VM.
@@ -129,7 +128,7 @@ impl VM<'_> {
                 }
                 Some(OpCode::Not) => {
                     let value = self.pop();
-                    self.push(Value::Bool(self.is_falsey(value)))
+                    self.push(Value::Bool(value.is_falsey()))
                 }
                 Some(OpCode::Negate) => {
                     match self.peek(0) {
@@ -149,7 +148,7 @@ impl VM<'_> {
                     return Ok(());
                 }
                 None => {
-                    panic!("Unknown opcode {}", instruction);
+                    panic!("Unknown opcode {instruction}");
                 }
             }
         }
@@ -176,14 +175,6 @@ impl VM<'_> {
         }
     }
 
-    fn is_falsey(&self, value: Value) -> bool {
-        match value {
-            Value::Bool(boolean) => !boolean,
-            Value::Nil => true,
-            Value::Number(_) => false,
-        }
-    }
-
     fn push(&mut self, constant: Value) {
         self.stack[self.stack_top] = constant;
         self.stack_top += 1;
@@ -191,37 +182,38 @@ impl VM<'_> {
 
     fn pop(&mut self) -> Value {
         self.stack_top -= 1;
-        self.stack[self.stack_top]
+        // TODO: Remove .clone() when Value is Copy-able
+        self.stack[self.stack_top].clone()
     }
 
     fn peek(&self, distance: usize) -> Value {
-        self.stack[self.stack_top - 1 - distance]
+        // TODO: Remove .clone() when Value is Copy-able
+        self.stack[self.stack_top - 1 - distance].clone()
     }
 
     fn read_byte(&mut self) -> u8 {
-        let result = self.chunk.code[self.ip as usize];
+        let result = self.chunk.code[self.ip];
         self.ip += 1;
         result
     }
 
     fn read_constant(&mut self) -> Value {
         let byte = self.read_byte();
-        self.chunk.constants[byte as usize]
+        // TODO: Remove .clone() when Value is Copy-able
+        self.chunk.constants[byte as usize].clone()
     }
 
     fn runtime_error(&self, message: &str) {
-        eprintln!("{}", message);
+        eprintln!("{message}");
         let line = self.chunk.lines[self.ip - 1];
-        eprintln!("[line {}] in script", line);
+        eprintln!("[line {line}] in script");
     }
 
     #[cfg(feature = "debug_trace_execution")]
     fn trace_execution(&self) {
         print!("          ");
         for slot in self.stack.iter().take(self.stack_top) {
-            print!("[ ");
-            print!("{}", slot);
-            print!(" ]");
+            print!("[ {slot} ]");
         }
         println!();
         self.chunk
@@ -231,24 +223,9 @@ impl VM<'_> {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Hash)]
-pub enum InterpretResult {
-    InterpretOk,
+pub enum InterpretError {
     InterpretCompileError,
     InterpretRuntimeError,
-}
-
-enum InterpretError {
-    InterpretCompileError,
-    InterpretRuntimeError,
-}
-
-impl InterpretError {
-    fn to_interpret_result(&self) -> InterpretResult {
-        match self {
-            InterpretError::InterpretCompileError => InterpretResult::InterpretCompileError,
-            InterpretError::InterpretRuntimeError => InterpretResult::InterpretRuntimeError,
-        }
-    }
 }
 
 // [1] Stopping the program on a runtime error, without giving the user any control on what happens,

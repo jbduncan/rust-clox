@@ -1,4 +1,4 @@
-use rust_clox::vm::{InterpretResult, VM};
+use rust_clox::vm::{InterpretError, VM};
 use std::env;
 use std::fs::read_to_string;
 use std::io::{self, BufRead, Stdout, Write};
@@ -13,7 +13,7 @@ fn run_app() -> i32 {
     match args.len() {
         1 => repl().map_or_else(
             |error| {
-                eprintln!("{}", error);
+                eprintln!("{error}");
                 70
             },
             |_| 0,
@@ -37,7 +37,7 @@ fn repl() -> io::Result<()> {
 
         match lines.next() {
             Some(line) => {
-                VM::new(&line?).interpret();
+                let _ = VM::new(&line?).interpret();
             }
             None => {
                 println!();
@@ -48,20 +48,20 @@ fn repl() -> io::Result<()> {
 }
 
 fn print(mut stdout: &Stdout, text: &str) -> io::Result<()> {
-    print!("{}", text);
+    print!("{text}");
     stdout.flush()
 }
 
 fn run_file(path: &str) -> i32 {
     read_to_string(path).map_or_else(
         |error| {
-            eprintln!("{}", error);
+            eprintln!("{error}");
             74
         },
         |source| match VM::new(&source).interpret() {
-            InterpretResult::InterpretOk => 0,
-            InterpretResult::InterpretCompileError => 65,
-            InterpretResult::InterpretRuntimeError => 70,
+            Ok(()) => 0,
+            Err(InterpretError::InterpretCompileError) => 65,
+            Err(InterpretError::InterpretRuntimeError) => 70,
         },
     )
 }

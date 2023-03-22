@@ -277,6 +277,14 @@ impl<'a> Token<'a> {
         // lexeme is guaranteed to be UTF-8.
         String::from_utf8_lossy(self.lexeme).to_string() // TODO: is .to_string() needed?
     }
+
+    pub fn string_literal_lexeme_to_string(&self) -> String {
+        let length = &self.lexeme.len() - 2;
+        let string_literal = &self.lexeme[1..length];
+        // The lexeme came into the VM from the source file, which is read as a Rust string, so the
+        // lexeme is guaranteed to be UTF-8.
+        String::from_utf8_lossy(string_literal).to_string() // TODO: is .to_string() needed?
+    }
 }
 
 pub(crate) const NULL_TOKEN: Token = Token {

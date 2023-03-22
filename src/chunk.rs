@@ -90,7 +90,7 @@ impl Chunk {
     pub fn disassemble_instruction(&self, offset: usize) {
         let mut buffer = String::new();
         let _ = self.fmt_instruction(&mut buffer, offset);
-        print!("{}", buffer);
+        print!("{buffer}");
     }
 
     #[cfg(feature = "debug_trace_execution")]
@@ -145,7 +145,7 @@ impl Chunk {
         name: &str,
         offset: usize,
     ) -> Result<usize, fmt::Error> {
-        writeln!(f, "{}", name)?;
+        writeln!(f, "{name}")?;
         Ok(offset + 1)
     }
 }

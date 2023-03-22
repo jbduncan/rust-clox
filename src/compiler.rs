@@ -307,6 +307,13 @@ impl<'a> Compiler<'a> {
         self.emit_constant(value);
     }
 
+    fn string(&mut self) {
+        let value = Value::String(
+            self.parser.previous.string_literal_lexeme_to_string()
+        );
+        self.emit_constant(value);
+    }
+
     fn literal(&mut self) {
         self.emit_op_code(match self.parser.previous.kind {
             TokenKind::False => OpCode::False,
@@ -402,7 +409,7 @@ impl<'a> Compiler<'a> {
             TokenKind::Less => ParseRule::of_infix(Compiler::binary, Precedence::Comparison),
             TokenKind::LessEqual => ParseRule::of_infix(Compiler::binary, Precedence::Comparison),
             TokenKind::Identifier => ParseRule::none(),
-            TokenKind::String => ParseRule::none(),
+            TokenKind::String => ParseRule::of_prefix(Compiler::string, Precedence::None),
             TokenKind::Number => ParseRule::of_prefix(Compiler::number, Precedence::None),
             TokenKind::And => ParseRule::none(),
             TokenKind::Class => ParseRule::none(),
